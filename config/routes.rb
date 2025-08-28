@@ -1,3 +1,11 @@
 Rails.application.routes.draw do
-  # For details on the DSL available within this file, see http://guides.rubyonrails.org/routing.html
+  namespace :api do
+    namespace :v1 do
+      resources :debts do
+        collection do
+          post :import_debts_csv
+        end
+      end
+    end
+  end
 end
