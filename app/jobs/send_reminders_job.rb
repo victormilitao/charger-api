@@ -2,14 +2,15 @@ class SendRemindersJob < ApplicationJob
   queue_as :default
 
   def perform(debt_ids)
-    debts = Debt.where(id: debt_ids)
-    
-    debts.each do |debt|
-      begin
-        generate_invoice_for_debt(debt)
-        send_reminder_email(debt)
-      rescue => e
-        Rails.logger.error "Erro ao enviar lembrete para dívida #{debt.id}: #{e.message}"
+    # Processa em lotes para evitar problemas de memória com muitos registros
+    Debt.where(id: debt_ids).in_batches(of: 1000) do |batch|
+      batch.each do |debt|
+        begin
+          generate_invoice_for_debt(debt)
+          send_reminder_email(debt)
+        rescue => e
+          Rails.logger.error "Erro ao enviar lembrete para dívida #{debt.id}: #{e.message}"
+        end
       end
     end
   end

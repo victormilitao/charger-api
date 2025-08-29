@@ -29,7 +29,16 @@ module Api
         SendRemindersJob.perform_later(pending_debts.pluck(:id))
         render json: { message: 'Cobrança iniciada!' }, status: :ok
       end
-      
+
+      def webhook_payment
+        result = WebhookPaymentService.new(params).process
+        
+        if result[:success]
+          render json: { message: result[:message] }, status: result[:status]
+        else
+          render json: { error: result[:error] }, status: result[:status]
+        end
+      end
     end
   end
 end

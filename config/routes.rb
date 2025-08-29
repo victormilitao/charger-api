@@ -8,6 +8,7 @@ Rails.application.routes.draw do
         collection do
           post :import_debts_csv
           post :generate_invoices
+          post :webhook_payment
         end
       end
     end

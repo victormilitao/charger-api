@@ -169,4 +169,162 @@ RSpec.describe 'Api::V1::DebtsController', type: :request do
       end
     end
   end
+
+  describe 'POST /api/v1/debts/webhook_payment' do
+    let(:endpoint) { '/api/v1/debts/webhook_payment' }
+    let!(:pending_debt) { create(:debt, status: 'pending', debt_amount: 1000.0) }
+    let(:valid_params) do
+      {
+        debtId: pending_debt.debt_id,
+        paidAmount: 1000.0,
+        paidBy: 'João Silva'
+      }
+    end
+
+    context 'when all parameters are valid' do
+      it 'marks debt as paid and returns success' do
+        expect {
+          post endpoint, params: valid_params
+        }.to change { pending_debt.reload.status }.from('pending').to('paid')
+
+        expect(response).to have_http_status(:ok)
+        
+        json_response = JSON.parse(response.body)
+        expect(json_response['message']).to eq('Pagamento registrado com sucesso')
+        
+        expect(pending_debt.paid_amount).to eq(1000.0)
+        expect(pending_debt.paid_by).to eq('João Silva')
+        expect(pending_debt.paid_at).to be_present
+      end
+
+      it 'updates debt with payment information' do
+        post endpoint, params: valid_params
+
+        pending_debt.reload
+        expect(pending_debt.paid_amount).to eq(1000.0)
+        expect(pending_debt.paid_by).to eq('João Silva')
+        expect(pending_debt.paid_at).to be_present
+      end
+    end
+
+    context 'when debtId is missing' do
+      it 'returns bad request error' do
+        post endpoint, params: valid_params.except(:debtId)
+
+        expect(response).to have_http_status(:bad_request)
+        
+        json_response = JSON.parse(response.body)
+        expect(json_response['error']).to eq('Parâmetros inválidos')
+      end
+    end
+
+    context 'when paidAmount is missing' do
+      it 'returns bad request error' do
+        post endpoint, params: valid_params.except(:paidAmount)
+
+        expect(response).to have_http_status(:bad_request)
+        
+        json_response = JSON.parse(response.body)
+        expect(json_response['error']).to eq('Parâmetros inválidos')
+      end
+    end
+
+    context 'when paidBy is missing' do
+      it 'returns bad request error' do
+        post endpoint, params: valid_params.except(:paidBy)
+
+        expect(response).to have_http_status(:bad_request)
+        
+        json_response = JSON.parse(response.body)
+        expect(json_response['error']).to eq('Parâmetros inválidos')
+      end
+    end
+
+    context 'when paidAmount is zero or negative' do
+      it 'returns bad request error for zero amount' do
+        post endpoint, params: valid_params.merge(paidAmount: 0)
+
+        expect(response).to have_http_status(:bad_request)
+        
+        json_response = JSON.parse(response.body)
+        expect(json_response['error']).to eq('Parâmetros inválidos')
+      end
+
+      it 'returns bad request error for negative amount' do
+        post endpoint, params: valid_params.merge(paidAmount: -100)
+
+        expect(response).to have_http_status(:bad_request)
+        
+        json_response = JSON.parse(response.body)
+        expect(json_response['error']).to eq('Parâmetros inválidos')
+      end
+    end
+
+    context 'when debt is not found' do
+      it 'returns not found error' do
+        post endpoint, params: valid_params.merge(debtId: 'INVALID_DEBT_ID')
+
+        expect(response).to have_http_status(:not_found)
+        
+        json_response = JSON.parse(response.body)
+        expect(json_response['error']).to eq('Dívida não encontrada')
+      end
+    end
+
+    context 'when debt is already paid' do
+      let!(:paid_debt) { create(:debt, status: 'paid', debt_amount: 1000.0) }
+
+      it 'returns unprocessable entity error' do
+        post endpoint, params: valid_params.merge(debtId: paid_debt.debt_id)
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        
+        json_response = JSON.parse(response.body)
+        expect(json_response['error']).to eq('Dívida já foi paga')
+      end
+    end
+
+    context 'when mark_as_paid! raises an error' do
+      before do
+        allow_any_instance_of(Debt).to receive(:mark_as_paid!).and_raise(
+          StandardError.new('Erro ao atualizar dívida')
+        )
+      end
+
+      it 'returns unprocessable entity error' do
+        post endpoint, params: valid_params
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        
+        json_response = JSON.parse(response.body)
+        expect(json_response['error']).to eq('Erro ao processar pagamento: Erro ao atualizar dívida')
+      end
+    end
+
+    context 'when all parameters are empty strings' do
+      it 'returns bad request error' do
+        post endpoint, params: {
+          debtId: '',
+          paidAmount: '',
+          paidBy: ''
+        }
+
+        expect(response).to have_http_status(:bad_request)
+        
+        json_response = JSON.parse(response.body)
+        expect(json_response['error']).to eq('Parâmetros inválidos')
+      end
+    end
+
+    context 'when paidAmount is a string that converts to zero' do
+      it 'returns bad request error' do
+        post endpoint, params: valid_params.merge(paidAmount: '0')
+
+        expect(response).to have_http_status(:bad_request)
+        
+        json_response = JSON.parse(response.body)
+        expect(json_response['error']).to eq('Parâmetros inválidos')
+      end
+    end
+  end
 end
