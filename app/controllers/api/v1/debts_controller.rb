@@ -19,6 +19,16 @@ module Api
           render json: { error: "Erro ao processar CSV: #{e.message}" }, status: :unprocessable_entity
         end
       end
+
+      def generate_invoices
+        pending_debts = Debt.pending
+        if pending_debts.empty?
+          return render json: { message: 'Nenhuma dívida pendente encontrada' }, status: :ok
+        end
+
+        SendRemindersJob.perform_later(pending_debts.pluck(:id))
+        render json: { message: 'Cobrança iniciada!' }, status: :ok
+      end
       
     end
   end

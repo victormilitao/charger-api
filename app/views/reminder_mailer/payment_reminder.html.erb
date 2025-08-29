@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Lembrete de Pagamento</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      background-color: #f8f9fa;
+      padding: 20px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    .content {
+      background-color: #ffffff;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    .debt-info {
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+    .debt-info h3 {
+      margin-top: 0;
+      color: #dc3545;
+    }
+    .footer {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #ddd;
+      font-size: 14px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h2>Lembrete de Pagamento</h2>
+  </div>
+  
+  <div class="content">
+    <p>Olá <%= @debt.name %>,</p>
+    
+    <p>Informamos que sua dívida de referência <strong><%= @debt.debt_id %></strong> 
+    no valor de <strong>R$ <%= @debt.debt_amount %></strong> venceu há <strong><%= @days_overdue %> dias</strong>.</p>
+    
+    <div class="debt-info">
+      <h3>Dados da Dívida:</h3>
+      <ul>
+        <li><strong>Código:</strong> <%= @debt.debt_id %></li>
+        <li><strong>Valor:</strong> R$ <%= @debt.debt_amount %></li>
+        <li><strong>Vencimento:</strong> <%= @debt.debt_due_date.strftime('%d/%m/%Y') %></li>
+        <li><strong>CPF/CNPJ:</strong> <%= @debt.government_id %></li>
+      </ul>
+    </div>
+    
+    <p>Por favor, regularize sua situação o quanto antes para evitar acúmulo de juros e multas.</p>
+    
+    <p>Em caso de dúvidas, entre em contato conosco.</p>
+  </div>
+  
+  <div class="footer">
+    <p><strong>Atenciosamente,</strong><br>
+    Equipe de Cobrança</p>
+  </div>
+</body>
+</html>

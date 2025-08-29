@@ -1,0 +1,18 @@
+:concurrency: 5
+:queues:
+  - default
+  - mailers
+  - active_storage
+  - debts_import
+
+:pidfile: ./tmp/pids/sidekiq.pid
+:logfile: ./log/sidekiq.log
+
+development:
+  :concurrency: 2
+
+test:
+  :concurrency: 1
+
+production:
+  :concurrency: 10

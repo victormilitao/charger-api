@@ -26,7 +26,9 @@ RSpec.describe 'Api::V1::DebtsController', type: :request do
 
     context 'when file is provided' do
       it 'returns success response' do
-        post endpoint, params: { file: csv_file }
+        expect {
+          post endpoint, params: { file: csv_file }
+        }.to change { LoadDebtsJob.queue_adapter.enqueued_jobs.count }.by(1)
 
         expect(response).to have_http_status(:ok)
         
@@ -35,12 +37,10 @@ RSpec.describe 'Api::V1::DebtsController', type: :request do
         expect(json_response['errors']).to eq([])
       end
 
-      it 'calls the import service' do
-        expect_any_instance_of(DebtsCsvImportService).to receive(:import).and_return(
-          { errors: [], saved_file_path: '/tmp/test.csv' }
-        )
-
-        post endpoint, params: { file: csv_file }
+      it 'enqueues the LoadDebtsJob' do
+        expect {
+          post endpoint, params: { file: csv_file }
+        }.to have_enqueued_job(LoadDebtsJob)
       end
     end
 
@@ -79,6 +79,93 @@ RSpec.describe 'Api::V1::DebtsController', type: :request do
         post endpoint, params: { file: invalid_file }
 
         expect(response).to have_http_status(:bad_request)
+      end
+    end
+  end
+
+  describe 'POST /api/v1/debts/generate_invoices' do
+    let(:endpoint) { '/api/v1/debts/generate_invoices' }
+
+    context 'when there are pending debts' do
+      let!(:pending_debt1) { create(:debt, status: 'pending', debt_due_date: 5.days.ago) }
+      let!(:pending_debt2) { create(:debt, status: 'pending', debt_due_date: 10.days.ago) }
+      let!(:paid_debt) { create(:debt, status: 'paid', debt_due_date: 5.days.ago) }
+
+      it 'returns success response and enqueues SendRemindersJob' do
+        expect {
+          post endpoint
+        }.to have_enqueued_job(SendRemindersJob).with([pending_debt1.id, pending_debt2.id])
+
+        expect(response).to have_http_status(:ok)
+        
+        json_response = JSON.parse(response.body)
+        expect(json_response['message']).to eq('Cobrança iniciada!')
+      end
+
+      it 'only processes pending debts' do
+        post endpoint
+
+        expect(response).to have_http_status(:ok)
+        
+        expect(SendRemindersJob).to have_been_enqueued.with([pending_debt1.id, pending_debt2.id])
+        expect(SendRemindersJob).not_to have_been_enqueued.with([paid_debt.id])
+      end
+
+      it 'enqueues the job asynchronously' do
+        expect {
+          post endpoint
+        }.to have_enqueued_job(SendRemindersJob)
+      end
+    end
+
+    context 'when there are no pending debts' do
+      let!(:paid_debt1) { create(:debt, status: 'paid', debt_due_date: 5.days.ago) }
+      let!(:paid_debt2) { create(:debt, status: 'paid', debt_due_date: 10.days.ago) }
+
+      it 'returns success response with no pending debts message' do
+        expect {
+          post endpoint
+        }.not_to have_enqueued_job(SendRemindersJob)
+
+        expect(response).to have_http_status(:ok)
+        
+        json_response = JSON.parse(response.body)
+        expect(json_response['message']).to eq('Nenhuma dívida pendente encontrada')
+      end
+
+      it 'does not enqueue any jobs' do
+        expect {
+          post endpoint
+        }.not_to change { SendRemindersJob.queue_adapter.enqueued_jobs.count }
+      end
+    end
+
+    context 'when there are no debts at all' do
+      it 'returns success response with no pending debts message' do
+        expect {
+          post endpoint
+        }.not_to have_enqueued_job(SendRemindersJob)
+
+        expect(response).to have_http_status(:ok)
+        
+        json_response = JSON.parse(response.body)
+        expect(json_response['message']).to eq('Nenhuma dívida pendente encontrada')
+      end
+    end
+
+    context 'when SendRemindersJob raises an error' do
+      let!(:pending_debt) { create(:debt, status: 'pending', debt_due_date: 5.days.ago) }
+
+      before do
+        allow(SendRemindersJob).to receive(:perform_later).and_raise(
+          StandardError.new('Erro ao enfileirar job')
+        )
+      end
+
+      it 'raises the error' do
+        expect {
+          post endpoint
+        }.to raise_error(StandardError, 'Erro ao enfileirar job')
       end
     end
   end

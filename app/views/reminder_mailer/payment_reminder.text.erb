@@ -1,0 +1,19 @@
+Lembrete de Pagamento
+
+Olá <%= @debt.name %>,
+
+Informamos que sua dívida de referência <%= @debt.debt_id %> 
+no valor de R$ <%= @debt.debt_amount %> venceu há <%= @days_overdue %> dias.
+
+Dados da Dívida:
+- Código: <%= @debt.debt_id %>
+- Valor: R$ <%= @debt.debt_amount %>
+- Vencimento: <%= @debt.debt_due_date.strftime('%d/%m/%Y') %>
+- CPF/CNPJ: <%= @debt.government_id %>
+
+Por favor, regularize sua situação o quanto antes para evitar acúmulo de juros e multas.
+
+Em caso de dúvidas, entre em contato conosco.
+
+Atenciosamente,
+Equipe de Cobrança

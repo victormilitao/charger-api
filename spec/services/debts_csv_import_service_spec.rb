@@ -67,10 +67,10 @@ RSpec.describe DebtsCsvImportService, type: :service do
       expect(saved_content).to eq(csv_content)
     end
 
-    it 'logs the file path' do
-      expect(Rails.logger).to receive(:info).with(/Arquivo CSV salvo em:/)
-      
-      service.import
+    it 'enqueues the LoadDebtsJob' do
+      expect {
+        service.import
+      }.to have_enqueued_job(LoadDebtsJob)
     end
   end
 

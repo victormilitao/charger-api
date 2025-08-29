@@ -43,8 +43,11 @@ end
 group :development do
   gem 'web-console', '>= 4.1.0'
   gem 'listen', '~> 3.3'
+  gem 'letter_opener'
 end
 
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]
+
+gem "sidekiq", "~> 8.0"

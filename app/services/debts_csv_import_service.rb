@@ -9,6 +9,8 @@ class DebtsCsvImportService
 
   def import
     saved_file_path = save_imported_file
+
+    LoadDebtsJob.perform_later(saved_file_path)
     
     { errors: @errors, saved_file_path: saved_file_path }
   end
