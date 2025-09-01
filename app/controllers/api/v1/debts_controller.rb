@@ -3,7 +3,6 @@ module Api
     class DebtsController < ActionController::API
 
       def import_debts_csv
-        @debts = Debt.all
         unless params[:file]
           return render json: { error: 'Arquivo é obrigatório' }, status: :bad_request
         end
