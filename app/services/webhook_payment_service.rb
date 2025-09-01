@@ -1,10 +1,11 @@
 class WebhookPaymentService
-  attr_reader :debt_id, :paid_amount, :paid_by
+  attr_reader :debt_id, :paid_amount, :paid_by, :paid_at
 
   def initialize(params)
     @debt_id = params[:debtId]
     @paid_amount = params[:paidAmount]
     @paid_by = params[:paidBy]
+    @paid_at = params[:paidAt]
   end
 
   def process
@@ -27,7 +28,8 @@ class WebhookPaymentService
     debt_id.present? && 
     paid_amount.present? && 
     paid_by.present? &&
-    paid_amount.to_f > 0
+    paid_amount.to_f > 0 &&
+    paid_at.present?
   end
 
   def find_debt
@@ -39,7 +41,8 @@ class WebhookPaymentService
   def process_payment(debt)
     debt.mark_as_paid!(
       paid_amount: paid_amount,
-      paid_by: paid_by
+      paid_by: paid_by,
+      paid_at: paid_at
     )
   end
 

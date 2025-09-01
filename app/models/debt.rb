@@ -11,12 +11,12 @@ class Debt < ApplicationRecord
   scope :paid, -> { where(status: 'paid') }
   scope :overdue, -> { where('debt_due_date < ? AND status = ?', Date.current, 'pending') }
 
-  def mark_as_paid!(paid_amount:, paid_by:)
+  def mark_as_paid!(paid_amount:, paid_by:, paid_at:)
     update!(
       status: 'paid',
       paid_amount: paid_amount,
       paid_by: paid_by,
-      paid_at: Time.current
+      paid_at: paid_at
     )
   end
 end

@@ -6,7 +6,8 @@ RSpec.describe WebhookPaymentService do
     {
       debtId: debt.debt_id,
       paidAmount: 100.0,
-      paidBy: 'John Doe'
+      paidBy: 'John Doe',
+      paidAt: Time.current
     }
   end
 
@@ -88,7 +89,8 @@ RSpec.describe WebhookPaymentService do
         {
           debtId: paid_debt.debt_id,
           paidAmount: 100.0,
-          paidBy: 'John Doe'
+          paidBy: 'John Doe',
+          paidAt: Time.current
         }
       end
 

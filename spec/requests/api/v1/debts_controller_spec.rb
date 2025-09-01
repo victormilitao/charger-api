@@ -177,7 +177,8 @@ RSpec.describe 'Api::V1::DebtsController', type: :request do
       {
         debtId: pending_debt.debt_id,
         paidAmount: 1000.0,
-        paidBy: 'João Silva'
+        paidBy: 'João Silva',
+        paidAt: Time.current
       }
     end
 
@@ -306,7 +307,8 @@ RSpec.describe 'Api::V1::DebtsController', type: :request do
         post endpoint, params: {
           debtId: '',
           paidAmount: '',
-          paidBy: ''
+          paidBy: '',
+          paidAt: ''
         }
 
         expect(response).to have_http_status(:bad_request)
